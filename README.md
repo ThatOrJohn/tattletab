@@ -75,17 +75,17 @@ Requires Python 3.9+ (standard library only, nothing to install).
 
 ## Insight panels (right side)
 
-| Tab | What it answers |
-|---|---|
-| **Who** | Every company your pages contacted, ranked by requests. |
-| **Reach** | On how many distinct sites each company saw you. Covers this session, 7 days, 30 days, or all saved sessions. |
-| **Chains** | Fourth parties and who brought them in, redirect hand-offs between companies, and loads from inside third-party frames. |
-| **No tab** | Requests with no tab, grouped by the site that started them. Mostly service workers and prefetches. |
-| **Blocked** | How many tracker requests your content blocker stopped, per company. Sorted by what got through. |
+| Tab         | What it answers                                                                                                         |
+| ----------- | ----------------------------------------------------------------------------------------------------------------------- |
+| **Who**     | Every company your pages contacted, ranked by requests.                                                                 |
+| **Reach**   | On how many distinct sites each company saw you. Covers this session, 7 days, 30 days, or all saved sessions.           |
+| **Chains**  | Fourth parties and who brought them in, redirect hand-offs between companies, and loads from inside third-party frames. |
+| **No tab**  | Requests with no tab, grouped by the site that started them. Mostly service workers and prefetches.                     |
+| **Blocked** | How many tracker requests your content blocker stopped, per company. Sorted by what got through.                        |
 
 Some limits to know about:
 
-- **Chains are a floor, not a full count.** Chrome reports which *frame*
+- **Chains are a floor, not a full count.** Chrome reports which _frame_
   started a request, not which script. A third-party script that injects
   another script into the page itself still looks direct.
 - **Blocked understates your blocker.** A blocked script never runs, so the
@@ -108,6 +108,7 @@ Some limits to know about:
 
   Organic is a plain force-directed layout. Pinned nodes override both, and
   dragging a page brings its rings along.
+
 - **Auto-fit** is on by default: the camera eases to keep the whole graph in
   view as it grows. Panning or zooming hands the camera to you. Click **Fit**
   or press `F` to turn auto-fit back on.
@@ -169,21 +170,12 @@ many domains it loaded.
 - `ui/`: `index.html`, `app.js`, and a bundled copy of `d3.min.js` (no CDN)
 - `extension/`: the observe-only Chrome extension
 
-## Upgrading from NetScope
-
-This project was briefly called NetScope. If you have an older copy, copy its
-`data/netscope.db` (and any `-wal`/`-shm` files next to it) into this folder's
-`data/`. On first start the daemon renames it to `tattletab.db` and keeps all
-your sessions. In Chrome, remove the old unpacked extension and load this
-folder's `extension/` instead.
-
 ## Third-party code
 
 - `ui/d3.min.js` is [D3](https://d3js.org) v7.9.0 by Mike Bostock, under the ISC
   license (`ui/d3.LICENSE`).
 - The optional Disconnect tracker list isn't bundled; you download it yourself.
   Check its license before redistributing it.
-
 
 ## License
 
