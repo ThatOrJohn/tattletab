@@ -1,0 +1,10 @@
+{
+  "manifest_version": 3,
+  "name": "Tattletab",
+  "version": "0.4.0",
+  "description": "Observe-only: forwards request metadata to the Tattletab daemon on 127.0.0.1. Never blocks or modifies traffic.",
+  "permissions": ["webRequest"],
+  "host_permissions": ["<all_urls>"],
+  "background": { "service_worker": "background.js" },
+  "action": { "default_title": "Tattletab", "default_popup": "popup.html" }
+}

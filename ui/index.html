@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tattletab</title>
+<style>
+  :root {
+    --bg: #07090d; --panel: #0d1118; --panel2: #121823; --line: #1d2533;
+    --text: #d6dde8; --muted: #7d889a; --dim: #4a5466; --accent: #7ee0b5; --rec: #ff4d5e;
+    --mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+    --sans: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text); font: 13px/1.4 var(--sans); overflow: hidden; }
+  button { font: inherit; color: inherit; background: var(--panel2); border: 1px solid var(--line); border-radius: 6px; padding: 5px 10px; cursor: pointer; }
+  button:hover { border-color: #33405a; }
+  button.on { background: #1b2a26; border-color: #2d5a4b; color: var(--accent); }
+
+  #app { display: grid; grid-template-columns: 250px 1fr 330px; grid-template-rows: 1fr 92px; height: 100%; }
+  aside, #right { background: var(--panel); border-right: 1px solid var(--line); display: flex; flex-direction: column; min-height: 0; }
+  #right { border-right: 0; border-left: 1px solid var(--line); }
+  #left { grid-row: 1 / span 2; }
+  #right { grid-row: 1 / span 2; grid-column: 3; }
+
+  .brand { padding: 16px 16px 12px; display: flex; align-items: center; gap: 10px; }
+  .brand b { font: 600 15px var(--mono); letter-spacing: .08em; }
+  .brand .lens { width: 18px; height: 18px; border-radius: 50%; border: 2px solid var(--accent); box-shadow: 0 0 12px #7ee0b555; position: relative; }
+  .brand .lens::after { content: ""; position: absolute; width: 6px; height: 2px; background: var(--accent); right: -6px; bottom: -2px; transform: rotate(45deg); }
+
+  #rec { margin: 0 16px 14px; padding: 10px; display: flex; align-items: center; justify-content: center; gap: 8px; font-weight: 600; }
+  #rec .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--rec); }
+  #rec.live { background: #2a1015; border-color: #5b1e27; color: #ffb3bb; }
+  #rec.live .dot { animation: blink 1s infinite; border-radius: 2px; }
+  @keyframes blink { 50% { opacity: .25; } }
+
+  .label { padding: 4px 16px 6px; font: 600 10px var(--mono); color: var(--dim); letter-spacing: .12em; text-transform: uppercase; }
+  #clearAll { font: 600 10px var(--mono); color: var(--dim); letter-spacing: .08em; cursor: pointer; text-transform: uppercase; }
+  #clearAll:hover { color: var(--rec); }
+  #clearAll.hide { visibility: hidden; }
+  #sessions { overflow-y: auto; flex: 1; padding: 0 8px 12px; }
+  .sess { padding: 8px 10px; border-radius: 6px; cursor: pointer; border: 1px solid transparent; margin-bottom: 2px; }
+  .sess:hover { background: var(--panel2); }
+  .sess.sel { background: var(--panel2); border-color: var(--line); }
+  .sess .n { display: flex; align-items: center; gap: 6px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .sess .n .live { font: 600 9px var(--mono); color: var(--rec); border: 1px solid #5b1e27; padding: 0 4px; border-radius: 3px; }
+  .sess .m { color: var(--muted); font: 11px var(--mono); margin-top: 2px; }
+  .sess .acts { display: none; gap: 8px; margin-top: 6px; }
+  .sess.sel .acts { display: flex; }
+  .sess .acts a { color: var(--muted); font-size: 11px; cursor: pointer; }
+  .sess .acts a:hover { color: var(--text); }
+  .foot { padding: 10px 16px; border-top: 1px solid var(--line); color: var(--dim); font: 11px var(--mono); }
+
+  #stage { position: relative; min-width: 0; min-height: 0; grid-column: 2; }
+  #graph { position: absolute; inset: 0; width: 100%; height: 100%; display: block; cursor: grab; }
+  #graph:active { cursor: grabbing; }
+  #toolbar { position: absolute; top: 12px; left: 12px; display: flex; gap: 6px; flex-wrap: wrap; }
+  #toolbar .grp { display: flex; }
+  #toolbar .grp button { border-radius: 0; }
+  #toolbar .grp button:first-child { border-radius: 6px 0 0 6px; }
+  #toolbar .grp button:last-child { border-radius: 0 6px 6px 0; border-left: 0; }
+  #zoomCtl { position: absolute; right: 12px; bottom: 12px; display: flex; flex-direction: column; }
+  #zoomCtl button { width: 32px; height: 30px; padding: 0; font: 16px/1 var(--sans); border-radius: 0; }
+  #zoomCtl button:first-child { border-radius: 6px 6px 0 0; }
+  #zoomCtl button:last-child { border-radius: 0 0 6px 6px; font-size: 14px; }
+  #zoomCtl button + button { border-top: 0; }
+  #stage.ent .graph-only { display: none !important; }
+  #sound { font: 11px var(--mono); }
+  #sound.on { color: #ffb347; border-color: #5a4220; background: #2a2010; }
+
+  #receiptModal { position: fixed; inset: 0; background: #000b; display: flex; align-items: flex-start; justify-content: center; overflow-y: auto; z-index: 10; padding: 32px 16px; }
+  #receiptModal[hidden] { display: none; }
+  .rwrap { display: flex; flex-direction: column; align-items: center; gap: 14px; filter: drop-shadow(0 12px 30px #000a); }
+  .rbtns { display: flex; gap: 8px; }
+  #receiptPaper { width: 340px; background: #f6f3ec; color: #1b1b1b; font: 12px/1.5 ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    padding: 24px 22px 34px; text-transform: uppercase; letter-spacing: .02em;
+    -webkit-mask: conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) 50% / 14px 100%;
+            mask: conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) 50% / 14px 100%; }
+  #receiptPaper .c { text-align: center; }
+  #receiptPaper .big { font-size: 19px; font-weight: 700; letter-spacing: .12em; margin-bottom: 2px; }
+  #receiptPaper .ln { display: flex; justify-content: space-between; gap: 10px; }
+  #receiptPaper .ln span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #receiptPaper .ln span:last-child { white-space: nowrap; }
+  #receiptPaper .hd { font-weight: 700; }
+  #receiptPaper .tot { font-weight: 700; font-size: 13px; }
+  #receiptPaper .sub { color: #666; font-size: 11px; text-transform: none; }
+  #receiptPaper small { font-size: 9px; color: #666; }
+  #receiptPaper .hr { border-top: 1px dashed #999; margin: 8px 0; }
+  #receiptPaper .hr.dbl { border-top: 3px double #555; }
+  #receiptPaper .bar { margin: 6px 0 0; }
+  #receiptPaper .gap { margin-top: 10px; font-weight: 700; }
+  #receiptPaper .fine { font-size: 9px; color: #777; text-transform: none; margin-top: 10px; }
+  @media print {
+    body { background: #fff !important; overflow: visible !important; }
+    body * { visibility: hidden !important; }
+    #receiptModal, #receiptModal * { visibility: visible !important; }
+    #receiptModal { position: absolute; inset: 0; background: none; padding: 0; }
+    .rbtns { display: none !important; }
+    .rwrap { filter: none; }
+  }
+
+  #legend { position: absolute; bottom: 12px; left: 12px; right: 56px; display: flex; gap: 12px; flex-wrap: wrap; font: 11px var(--mono); color: var(--muted); }
+  #legend span { display: flex; align-items: center; gap: 5px; cursor: pointer; user-select: none; }
+  #legend span.off { opacity: .3; text-decoration: line-through; }
+  #legend i { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+  #empty { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 6px; color: var(--muted); pointer-events: none; text-align: center; }
+  #empty b { color: var(--text); font-size: 15px; }
+  #tip { position: absolute; pointer-events: none; background: #0b0f16ee; border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; font: 11px var(--mono); max-width: 320px; display: none; box-shadow: 0 8px 24px #0008; }
+  #tip .t { font: 600 12px var(--sans); color: #fff; margin-bottom: 3px; }
+  #tip .h { color: var(--muted); }
+
+  #timeline { grid-column: 2; border-top: 1px solid var(--line); background: var(--panel); display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 12px; padding: 0 14px; }
+  #timeline .ctl { display: flex; gap: 6px; align-items: center; }
+  #play { width: 34px; height: 34px; padding: 0; border-radius: 50%; font-size: 13px; }
+  #speed { font: 11px var(--mono); }
+  #spark { width: 100%; height: 56px; display: block; cursor: pointer; }
+  #clock { font: 12px var(--mono); color: var(--muted); min-width: 110px; text-align: right; }
+  #follow.on { color: var(--rec); border-color: #5b1e27; background: #2a1015; }
+
+  #stats { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--line); border-bottom: 1px solid var(--line); }
+  #stats div { background: var(--panel); padding: 12px 14px; }
+  #stats b { display: block; font: 600 20px var(--mono); color: #fff; }
+  #stats span { font: 10px var(--mono); color: var(--muted); letter-spacing: .08em; text-transform: uppercase; }
+  #detail { padding: 12px 14px; border-bottom: 1px solid var(--line); display: none; }
+  #detail h3 { margin: 0 0 4px; font-size: 14px; display: flex; gap: 8px; align-items: center; }
+  #detail .sub { font: 11px var(--mono); color: var(--muted); margin-bottom: 8px; }
+  #detail ul { margin: 0; padding: 0; list-style: none; max-height: 160px; overflow-y: auto; font: 11px var(--mono); }
+  #detail li { display: flex; justify-content: space-between; padding: 2px 0; color: var(--muted); gap: 8px; }
+  #detail li span:first-child { color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #tabs { display: flex; border-bottom: 1px solid var(--line); padding: 0 8px; }
+  #tabs button { flex: 1; background: none; border: 0; border-bottom: 2px solid transparent; border-radius: 0; padding: 10px 2px 8px; font: 600 10px var(--mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+  #tabs button:hover { color: var(--text); }
+  #tabs button.on { color: var(--accent); border-bottom-color: var(--accent); background: none; }
+  #panel { overflow-y: auto; flex: 1; padding: 4px 14px 14px; }
+  .headline { padding: 10px 0 8px; font-size: 13px; line-height: 1.45; color: var(--text); }
+  .headline b { color: #fff; }
+  .note { font: 11px/1.45 var(--sans); color: var(--dim); padding: 10px 0 2px; }
+  .sect { font: 600 10px var(--mono); color: var(--dim); letter-spacing: .12em; text-transform: uppercase; padding: 14px 0 2px; }
+  .scope { display: flex; gap: 0; margin: 8px 0 2px; }
+  .scope button { flex: 1; border-radius: 0; font: 11px var(--mono); padding: 4px; }
+  .scope button:first-child { border-radius: 6px 0 0 6px; }
+  .scope button:last-child { border-radius: 0 6px 6px 0; }
+  .scope button + button { border-left: 0; }
+  .row .sub2 { grid-column: 1 / span 2; font: 11px var(--mono); color: var(--dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .row .bar.split { display: flex; }
+  .row .bar.split i { border-radius: 0; }
+  .arrow { color: var(--dim); padding: 0 4px; }
+  .empty { color: var(--dim); font-size: 12px; padding: 10px 0; }
+  .row { display: grid; grid-template-columns: 1fr auto; gap: 2px 8px; padding: 6px 0; cursor: pointer; border-radius: 4px; }
+  .row:hover .nm { color: #fff; }
+  .row .nm { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .row .ct { font: 11px var(--mono); color: var(--muted); }
+  .row .bar { grid-column: 1 / span 2; height: 3px; background: var(--line); border-radius: 2px; overflow: hidden; }
+  .row .bar i { display: block; height: 100%; border-radius: 2px; }
+  .chip { font: 600 9px var(--mono); padding: 1px 5px; border-radius: 3px; letter-spacing: .05em; text-transform: uppercase; }
+</style>
+</head>
+<body>
+<div id="app">
+  <aside id="left">
+    <div class="brand"><div class="lens"></div><b>TATTLETAB</b></div>
+    <button id="rec"><span class="dot"></span><span id="recLabel">Start recording</span></button>
+    <div class="label" style="display:flex;justify-content:space-between;align-items:center">Sessions<a id="clearAll" title="Delete all saved sessions">Clear all</a></div>
+    <div id="sessions"></div>
+    <div class="foot" id="foot">127.0.0.1 · local only</div>
+  </aside>
+
+  <main id="stage">
+    <canvas id="graph"></canvas>
+    <div id="toolbar">
+      <div class="grp"><button id="viewGraph" class="on" title="Graph view">Graph</button><button id="viewEnt" title="Who's following you (E)">Entourage</button></div>
+      <div class="grp graph-only"><button id="byCompany" class="on">Companies</button><button id="byHost">Hosts</button></div>
+      <div class="grp graph-only"><button id="layStructured" class="on" title="Degree-aware: leaves ring their page, shared nodes sit between">Structured</button><button id="layOrganic" title="Plain force-directed layout">Organic</button></div>
+      <button id="trackersOnly" class="graph-only" title="Hide CDN and content nodes">Trackers only</button>
+      <button id="fit" class="on graph-only">Auto-fit</button>
+      <button id="unpinAll" class="graph-only" title="Release all pinned nodes" style="display:none">Unpin</button>
+    </div>
+    <div id="legend" class="graph-only"></div>
+    <div id="zoomCtl" class="graph-only">
+      <button id="zoomIn" title="Zoom in (+ or double-click)">+</button>
+      <button id="zoomOut" title="Zoom out (− or shift + double-click)">−</button>
+      <button id="zoomFit" title="Fit to view (F or 0)">⤢</button>
+    </div>
+    <div id="empty"><b>Nothing captured yet</b><span>Start recording, then browse in Chrome.</span></div>
+    <div id="tip"></div>
+  </main>
+
+  <section id="timeline">
+    <div class="ctl">
+      <button id="play" title="Play / pause (space)">▶</button>
+      <button id="speed" title="Playback speed">4×</button>
+      <button id="follow" title="Follow live traffic">LIVE</button>
+      <button id="sound" title="Geiger counter: a click per tracker request, ka-ching for ads. Keeps playing while this tab is in the background.">○ Geiger</button>
+    </div>
+    <canvas id="spark"></canvas>
+    <div id="clock">—</div>
+  </section>
+
+  <aside id="right">
+    <div id="stats">
+      <div><b id="sReq">0</b><span>requests</span></div>
+      <div><b id="sHosts">0</b><span>hosts</span></div>
+      <div><b id="sCo">0</b><span>3rd-party cos.</span></div>
+      <div><b id="s3p">0%</b><span>3rd-party reqs</span></div>
+    </div>
+    <div id="detail"></div>
+    <nav id="tabs">
+      <button data-tab="who" class="on">Who</button>
+      <button data-tab="reach">Reach</button>
+      <button data-tab="chains">Chains</button>
+      <button data-tab="bg">No tab</button>
+      <button data-tab="blocked">Blocked</button>
+    </nav>
+    <div id="panel"></div>
+  </aside>
+</div>
+<div id="receiptModal" hidden>
+  <div class="rwrap">
+    <div id="receiptPaper"></div>
+    <div class="rbtns"><button id="receiptCopyImg" title="Copy the receipt as a PNG image">Copy image</button><button id="receiptCopyText" title="Copy the receipt as plain text (monospace)">Copy text</button><button id="receiptPrint">Print / PDF</button><button id="receiptClose">Close</button></div>
+  </div>
+</div>
+<script src="/d3.min.js"></script>
+<script src="/app.js"></script>
+</body>
+</html>
