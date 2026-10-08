@@ -184,3 +184,8 @@ folder's `extension/` instead.
 - The optional Disconnect tracker list isn't bundled; you download it yourself.
   Check its license before redistributing it.
 
+
+## License
+
+Tattletab is released under the [MIT License](LICENSE). Bundled third-party
+code keeps its own license, as listed above.
